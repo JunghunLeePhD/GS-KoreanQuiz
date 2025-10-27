@@ -1,0 +1,77 @@
+<!-- Stylesheet.html -->
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    background: black;
+  }
+  p {
+    font-family: 굴림, verdana, sans-serif;
+    color: white;
+    font-size: 7vmin;
+    text-align: center;
+    background: transparent;
+    margin: 2vmin 3vmin;
+  }
+  .correct {
+    background: #8b0000;
+    transition: all 0.5s ease-out;
+  }
+  .incorrect {
+    background: #111184;
+    transition: all 0.5s ease-out;
+  }
+  .correct > p {
+    font-size: 4vmin;
+    transition: all 4s ease-out;
+  }
+  .incorrect > p {
+    font-size: 4vmin;
+    transition: all 4s ease-out;
+  }
+  body {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .container {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .content.question {
+    height: 20vh;
+  }
+  .content.question > p {
+    font-size: 4vmin;
+  }
+  .content.options {
+    height: 80vh;
+  }
+  .content.options > p {
+    font-size: 6vmin;
+  }
+  .detail {
+    height: 20vh;
+    width: 100%;
+    border: dashed white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+</style>

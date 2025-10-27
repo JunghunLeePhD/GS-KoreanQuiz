@@ -1,0 +1,15 @@
+# Clasp files
+.clasp.json
+.claspignore
+
+# Local properties
+*.properties.json
+
+# Node
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+
+.DS_Store

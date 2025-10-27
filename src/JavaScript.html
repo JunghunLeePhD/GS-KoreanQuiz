@@ -1,0 +1,159 @@
+<script>
+  // 1. Call the server-side getQuiz() function when the page loads.
+  // The 'setQuiz' function will handle the response.
+  google.script.run.withSuccessHandler(setQuiz).getQuiz();
+
+  /**
+   * This function is the "Success Handler" for getQuiz().
+   * It receives the random quiz item object from the server.
+   *
+   * @param {Object} quizItemObject - A plain object like { question: "...", ... }
+   * @return {Void}
+   */
+  function setQuiz(quizItemObject) {
+    // Check if the server returned an error
+    if (quizItemObject.error) {
+      document.getElementById(
+        "container"
+      ).innerHTML = `<p>퀴즈를 불러오는 데 실패했습니다: ${quizItemObject.error}</p>`;
+      return;
+    }
+
+    // 2. Create an instance of the Quiz class from the plain object.
+    // This will also clean and shuffle the options.
+    const quiz = Quiz.fromJsonObject(quizItemObject);
+    const containerElement = document.getElementById("container");
+
+    // 3. Build the HTML for the quiz
+    containerElement.innerHTML = `
+    <div class="content question" id="question">
+      <p>
+        ${quiz.question}
+      </p>
+    </div>
+    <div class="content options" id="options">
+      ${quiz.options
+        .map(
+          (val, idx) =>
+            // We use the index as the ID
+            `<div class="detail option" id="${idx}"><p>${val}</p></div>`
+        )
+        .reduce((acc, val) => acc + val, "")}
+    </div>
+    `;
+
+    // 4. Add click listener to the question to get a new quiz
+    const questionElemet = document.getElementById("question");
+    questionElemet.addEventListener("click", () => {
+      containerElement.innerHTML = `<p>퀴즈를 생성하는 중입니다...</p>`;
+      // Call the server function again
+      google.script.run.withSuccessHandler(setQuiz).getQuiz();
+    });
+
+    // 5. Add click listeners to each option
+    const optionElements = document.getElementsByClassName("option");
+    Array.prototype.forEach.call(optionElements, (option) => {
+      option.addEventListener(
+        "click",
+        (event) => {
+          const selectedId = +event.currentTarget.id;
+          // Get the *text* of the clicked option
+          const selectedText = quiz.options[selectedId];
+          const isCorrected = quiz.isCorrect(selectedText); // Check if correct
+          const selectedOptionElement = document.getElementById(selectedId);
+
+          // Apply correct/incorrect style
+          isCorrected
+            ? selectedOptionElement.classList.add("correct")
+            : selectedOptionElement.classList.add("incorrect");
+
+          // Show loading text while fetching explanation
+          selectedOptionElement.innerHTML = `<p>${selectedText}: 해설을 생각하는 중입니다...</p>`;
+
+          // 6. Call the server-side getExplaination function
+          google.script.run
+            .withSuccessHandler((explaination) => {
+              // This is the success handler for getExplaination
+              selectedOptionElement.innerHTML = `<p>${explaination}</p>`;
+            })
+            .getExplaination(selectedText);
+        },
+        { once: true } // Makes the listener fire only once
+      );
+    });
+  }
+
+  /**
+   * -----------------------------------------------------------------
+   * THE QUIZ CLASS
+   * -----------------------------------------------------------------
+   * This class now takes a JSON object to create a quiz,
+   * and still handles cleaning and shuffling the options.
+   */
+  class Quiz {
+    /**
+     * @param {String} question
+     * @param {String[]} options
+     * @param {String} answer
+     * @param {String[]} explaination
+     */
+    constructor(question, options, answer, explaination) {
+      this.question = question;
+      this.options = options;
+      this.answer = answer;
+      this.explaination = explaination;
+    }
+
+    /**
+     * @return {Boolean}
+     */
+    isCorrect(input) {
+      // Check against the cleaned answer
+      return this.answer === Quiz.cleanedString(input);
+    }
+
+    /**
+     * @param {String} str
+     * @return {String}
+     */
+    static cleanedString(str) {
+      if (typeof str !== "string") return "";
+      return str.replace(/[0-9|\.]/g, "").trim();
+    }
+
+    /**
+     * Cleans and shuffles an array of strings.
+     * @param {String[]} arr - An array of strings (e.g., options or explanations)
+     * @return {String[]}
+     */
+    static cleanAndShuffleArray(arr) {
+      if (!Array.isArray(arr)) return []; // Safety check
+
+      // 1. Clean each string in the array
+      const cleanedArr = arr.map((v) => this.cleanedString(v));
+
+      // 2. Shuffle the cleaned array
+      return cleanedArr
+        .map((value) => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
+    }
+
+    /**
+     * Creates a Quiz instance from a plain JSON object.
+     * This object comes from our quiz.json file.
+     * @params {Object} obj - e.g., { question: "...", options: [...], ... }
+     * @returns {Quiz}
+     */
+    static fromJsonObject(obj) {
+      // We still clean and shuffle the data, just as the old 'fromRow' did.
+      // We don't clean the question, just as 'fromRow' didn't.
+      return new Quiz(
+        obj.question,
+        Quiz.cleanAndShuffleArray(obj.options), // Clean and shuffle options
+        Quiz.cleanedString(obj.answer), // Clean the answer
+        obj.explanation.map((v) => Quiz.cleanedString(v)) // Just clean explanations, no shuffle
+      );
+    }
+  }
+</script>
